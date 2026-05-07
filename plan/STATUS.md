@@ -37,7 +37,7 @@
 
 ---
 
-## 2. 현재 완료된 것 (90_compact-RAG-Chatbot)
+## 2. 현재 완료된 것 (90_RAG-Pipeline)
 
 ### A. 데이터 파이프라인 — ✅ 완료
 - ✅ PubMed Entrez API로 논문 수집 (수산 부산물 바이오 활성 도메인)

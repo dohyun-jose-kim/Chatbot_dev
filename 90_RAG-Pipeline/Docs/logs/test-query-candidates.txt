@@ -1,0 +1,25 @@
+
+우리 데이터가 수산부산물 기능성 논문이니까, 이런 질문들이 적합합니다:
+
+  기능성 성분별:
+  1. What are the bioactive peptides from fish skin collagen?
+  2. Antimicrobial activity of chitosan from crustacean shells
+  3. Antioxidant properties of astaxanthin from shrimp waste
+  4. Calcium bioavailability from fish bone extracts
+  5. Omega-3 fatty acids extraction from fish processing waste
+
+  수산 부산물 소재별:
+  6. Bioactive compounds from sea cucumber byproducts
+  7. Functional properties of fish gelatin hydrolysates
+  8. Chitin and chitosan applications in food preservation
+  9. Seaweed polysaccharide biological activity
+  10. Squid ink bioactive components
+
+  기능/효능별:
+  11. ACE inhibitory peptides from marine sources
+  12. Anti-inflammatory effects of marine-derived compounds
+  13. Wound healing properties of marine collagen
+  14. Antitumor activity of marine polysaccharides
+  15. DPP-IV inhibitory peptides from fish protein hydrolysates
+
+  이 중에서 골라서 테스트해보시면 됩니다. 다양한 주제를 섞으면 검색 정확도를 폭넓게 확인할 수 있어요.
