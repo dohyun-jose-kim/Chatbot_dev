@@ -8,8 +8,8 @@ import streamlit as st
 
 
 def display_sidebar():
-    st.sidebar.selectbox("Model", options=["gemma3:4b", "gemma4:31b"], key="model")
-    st.sidebar.caption("gemma3:4b 빠름(개발) · gemma4:31b 고품질(턴당 60~70초)")
+    st.sidebar.selectbox("Model", options=["gemma4:26b", "gemma4:31b"], key="model")
+    st.sidebar.caption("gemma4:26b 빠름(개발) · gemma4:31b 고품질(턴당 느림)")
 
     if st.sidebar.button("새 세션"):
         st.session_state.session_id = None
