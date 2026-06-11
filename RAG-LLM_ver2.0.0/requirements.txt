@@ -1,0 +1,8 @@
+# ver2.0.1 — Multi-turn + LangChain + Ollama
+# 루트 .venv 하나를 ver2.x 전체에서 재사용. 이후 버전에서 패키지 추가.
+torch>=2.2
+transformers>=4.40
+chromadb>=1.0
+langchain>=1.0
+langchain-classic>=1.0   # create_history_aware_retriever 등 레거시 체인 (1.x에서 분리됨)
+langchain-ollama>=0.2
