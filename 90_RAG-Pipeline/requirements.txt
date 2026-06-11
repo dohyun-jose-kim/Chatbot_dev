@@ -1,7 +1,0 @@
-torch>=2.2
-transformers>=4.40
-chromadb>=1.0
-pandas
-numpy
-anthropic>=0.89
-google-genai
