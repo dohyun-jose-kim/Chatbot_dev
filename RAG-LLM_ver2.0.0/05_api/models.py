@@ -9,13 +9,13 @@ from pydantic import BaseModel, Field
 
 class ModelName(str, Enum):
     GEMMA4_31B = "gemma4:31b"
-    GEMMA3_4B = "gemma3:4b"
+    GEMMA4_26B = "gemma4:26b"
 
 
 class QueryInput(BaseModel):
     question: str
     session_id: str | None = Field(default=None)
-    model: ModelName = Field(default=ModelName.GEMMA3_4B)
+    model: ModelName = Field(default=ModelName.GEMMA4_26B)
 
 
 class QueryResponse(BaseModel):
@@ -23,3 +23,4 @@ class QueryResponse(BaseModel):
     session_id: str
     model: ModelName
     pmids: list[str]
+    steps: list[dict] = []

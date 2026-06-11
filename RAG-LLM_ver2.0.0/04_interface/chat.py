@@ -1,11 +1,11 @@
-"""Multi-turn RAG Chatbot — CLI Interface (진입점)
+"""Multi-turn RAG Chatbot — CLI Interface (진입점, ver2.6.0 에이전트)
 
-ver1 03_chatbot/chatbot.py의 CLI UX를 차용하되 멀티턴으로 확장.
-세션별 대화기록을 SQLite에 쌓아 history-aware 검색/답변을 수행한다.
+ver2.2.0의 고정 체인을 tool-calling 에이전트로 교체. 멀티턴은 thread_id=session_id
+체크포인터가 관리한다(질문 재작성 체인을 에이전트가 흡수). tool 호출과 PMID를 함께 출력.
 
 Usage:
     python 04_interface/chat.py          # 품질 모델 (gemma4:31b)
-    python 04_interface/chat.py --dev    # 개발 모델 (gemma3:4b, 빠름)
+    python 04_interface/chat.py --dev    # 개발 모델 (gemma4:26b, 빠름)
 
 NN_ 폴더는 import 불가하므로 진입점에서 각 스테이지를 sys.path에 등록한다.
 """
@@ -18,20 +18,20 @@ for p in [ROOT, ROOT / "01_retrieval", ROOT / "02_chain", ROOT / "03_memory"]:
     sys.path.insert(0, str(p))
 
 from config import LLM_MODEL, DEV_MODEL
-from rag_chain import get_rag_chain
-from db_utils import insert_application_logs, get_chat_history
+from agent import get_agent, extract_steps, extract_pmids
+from db_utils import insert_application_logs
 
 
 def main():
     model = DEV_MODEL if "--dev" in sys.argv else LLM_MODEL
 
     print("=" * 60)
-    print("  Fishery Byproduct Bioactivity — Multi-turn RAG Chatbot")
+    print("  Fishery Byproduct Bioactivity — Agentic RAG Chatbot")
     print(f"  model: {model}")
     print("  commands: 'new' 새 세션 | 'quit'/'q' 종료")
     print("=" * 60)
-    print("\nLoading models...")
-    chain = get_rag_chain(model)
+    print("\nLoading agent...")
+    agent = get_agent(model)
     session_id = str(uuid.uuid4())
     print(f"Ready! (session: {session_id[:8]})\n")
 
@@ -52,14 +52,22 @@ def main():
             print(f"  New session: {session_id[:8]}")
             continue
 
-        chat_history = get_chat_history(session_id)
-        out = chain.invoke({"input": question, "chat_history": chat_history})
-        answer = out["answer"]
+        out = agent.invoke(
+            {"messages": [("user", question)]},
+            config={"configurable": {"thread_id": session_id}},
+        )
+        msgs = out["messages"]
+        answer = msgs[-1].content
+        steps = extract_steps(msgs)
+        pmids = extract_pmids(msgs)
 
         print(f"\n{'─' * 60}")
         print(answer)
         print(f"{'─' * 60}")
-        print("  retrieved PMIDs:", ", ".join(d.metadata["pmid"] for d in out["context"]))
+        if steps:
+            print("  🔧 tools:", "; ".join(f"{s['tool']}('{s['query']}')" for s in steps))
+        if pmids:
+            print("  PMIDs:", ", ".join(pmids))
 
         insert_application_logs(session_id, question, answer, model)
 

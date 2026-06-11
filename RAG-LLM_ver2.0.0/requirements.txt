@@ -11,3 +11,6 @@ fastapi>=0.115
 uvicorn>=0.30
 streamlit>=1.40
 requests>=2.31
+# ver2.6.0 — LangGraph 에이전트
+langgraph>=1.0
+langgraph-checkpoint-sqlite>=2.0

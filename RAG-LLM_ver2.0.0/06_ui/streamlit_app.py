@@ -21,7 +21,7 @@ if "messages" not in st.session_state:
 if "session_id" not in st.session_state:
     st.session_state.session_id = None
 if "model" not in st.session_state:
-    st.session_state.model = "gemma3:4b"
+    st.session_state.model = "gemma4:26b"
 
 display_sidebar()
 display_chat_interface()

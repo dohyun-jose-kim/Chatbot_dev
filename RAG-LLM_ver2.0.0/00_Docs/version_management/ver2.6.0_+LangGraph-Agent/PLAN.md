@@ -96,32 +96,60 @@ RAG-LLM_ver2.0.0/
 └── 06_ui/chat_interface.py         # tool 단계 표시(st.status/expander)
 ```
 
-## 구현 순서 (각 단계 검증 포함)
+## 구현 단계 (Phase별)
 
-```
-1. config + requirements (DEV_MODEL, AGENT_SYSTEM_PROMPT, langgraph-checkpoint-sqlite 설치)
-   → verify: create_agent(stub tool, MemorySaver) 단발 호출 성공 (이미 확인)
+원칙: 각 step은 독립 검증 가능, 각 Phase는 시스템을 **동작 상태로** 남긴다(점진 증분).
+Phase 끝마다 dev→main 커밋, 전체 완료 시 `tag v2.6.0`. 과도기엔 CLI(에이전트)와
+API/UI(구 체인)가 잠시 공존하며 둘 다 동작 → API/UI 컷오버(Phase C) 후 구 체인 제거(Phase D).
 
-2. 02_chain/tools.py — search_local_corpus (retriever 싱글턴 래핑)
-   → verify: 질의 1개로 ver1 retriever와 동일 PMID top-5 반환
+### Phase 0 — 준비 (config + 의존성)
+- **0.1** `requirements.txt`: `+ langgraph-checkpoint-sqlite`
+  → verify: `from langgraph.checkpoint.sqlite import SqliteSaver` import 성공
+- **0.2** `config.py`: `DEV_MODEL` `gemma3:4b`→`gemma4:26b`; `AGENT_SYSTEM_PROMPT`(PMID 인용 + 라우팅 지시) 추가; `NCBI_EMAIL`/`NCBI_API_KEY` env 로드
+  → verify: `import config` OK; `gemma4:26b`·`gemma4:31b`가 `ollama list`에 존재
+- **게이트**: `create_agent`(stub tool, `MemorySaver`, gemma4:26b) 단발 루프 — *이미 검증됨(5.5s)*
+- **commit**: `ver2.6.0 P0: config + deps`
 
-3. tools.py — search_pubmed_live (Entrez)
-   → verify: 라이브 질의로 PMID 반환, 네트워크 차단 시 에러 메시지 반환(크래시 X)
+### Phase A — 에이전트 코어 (단일 tool = 로컬 RAG 패리티)
+목표: 고정 체인을 에이전트로 대체하되 기능은 기존(로컬 RAG)과 동일. 오케스트레이션 복잡도 도입 전.
+- **A.1** `02_chain/tools.py`: `search_local_corpus(query)` — `PubMedBERTRetriever` **모듈 싱글턴** 래핑(요청마다 재로드 금지), `CONTEXT_TEMPLATE` 형식(PMID/연도/저널/제목/초록) 문자열 반환
+  → verify: tool 직접 호출 → ver1 retriever와 동일 top-5 PMID
+- **A.2** `02_chain/agent.py`: `get_agent(model)` = `create_agent(ChatOllama(model), [search_local_corpus], system_prompt, checkpointer=MemorySaver())`
+  → verify: `S1`(로컬 질문) → PMID 인용 답변
+- **A.3** 멀티턴: `invoke(..., config={"configurable": {"thread_id": session_id}})`
+  → verify: `S3`(대명사) — 같은 thread_id로 Q1→Q2 'its' 해소
+- **A.4** `04_interface/chat.py`: `get_rag_chain`→`get_agent`, `thread_id=session_id`, **수동 chat_history 전달 제거**, tool 단계 출력
+  → verify: CLI에서 `S1`·`S3` 통과
+- **commit**: `ver2.6.0 PA: agent core (단일 tool, 체인 대체)`
 
-4. 02_chain/agent.py — get_agent(model): 2 tool + SqliteSaver + 시스템 프롬프트
-   → verify: S1·S2·S3 통과 @ gemma4:26b (tool 라우팅·멀티턴 대명사·PMID 인용)
+### Phase B — 영속 메모리 + 라이브 검색 tool (오케스트레이션)
+목표: 2번째 tool로 "코퍼스→라이브" 라우팅 시연 + 메모리 영속. **최대 리스크(멀티-tool 라우팅)를 여기서 retire.**
+- **B.1** `MemorySaver` → `SqliteSaver`(`check_same_thread=False`)
+  → verify: 프로세스 재시작 후 같은 session_id로 이전 맥락 유지
+- **B.2** `02_chain/tools.py`: `search_pubmed_live(query)` — Entrez ESearch+EFetch(v1 `collect_pubmed.py` 차용, `retmax≈5`, `timeout`, 네트워크 에러는 메시지 반환)
+  → verify: 라이브 질의 PMID 반환; 네트워크 차단 시 graceful(크래시 X)
+- **B.3** `agent.py`: `tools=[local, live]` + 시스템 프롬프트 라우팅 지시
+  → verify: `S2`(최신/광범위)→live 호출, `S1`→local 유지(오라우팅 점검)
+- **commit**: `ver2.6.0 PB: SqliteSaver + live pubmed tool + 라우팅`
 
-5. 05_api/main.py + models.py — cached_agent, thread_id, steps 반환
-   → verify: curl 멀티턴(같은 session_id 재요청) + 응답에 steps 포함
+### Phase C — API + UI (tool 호출 노출)
+- **C.1** `05_api/models.py`: `QueryResponse`에 `steps: list[dict]`(tool, query) 추가
+  → verify: 스키마 import OK
+- **C.2** `05_api/main.py`: `cached_chain`→`cached_agent`, `/chat`에 thread_id, `out["messages"]`에서 steps·pmids 추출, **수동 history 제거**
+  → verify: curl 멀티턴(같은 session_id) + 응답 `steps` 포함
+- **C.3** `06_ui/chat_interface.py`: tool 단계 `st.status`/expander 표시("🔧 search_pubmed_live('…')")
+  → verify: 브라우저 `S1`·`S2`·`S3` + tool 호출 노출
+- **C.4** `06_ui/sidebar.py`: 모델 옵션 `gemma4:26b`/`gemma4:31b`(gemma3:4b 제거)
+  → verify: 모델 전환 동작
+- **commit**: `ver2.6.0 PC: agent in API+UI + tool 노출`
 
-6. 06_ui/chat_interface.py — tool 단계 표시
-   → verify: 브라우저에서 S1~S3 + tool 호출 노출 확인
-
-7. 04_interface/chat.py — CLI 에이전트 전환
-   → verify: CLI에서 S1~S3 통과
-
-8. gemma4:31b 품질 확인 → dev 커밋 → main 머지
-```
+### Phase D — 정리 + 품질 + 릴리스
+- **D.1** `02_chain/rag_chain.py` 제거(대체됨); `get_chat_history` 이중주입 없음 grep 확인
+  → verify: 어디서도 수동 history 미전달, 앱 정상
+- **D.2** `gemma4:31b` 품질 확인
+  → verify: `S1`-`S3` @ 31b
+- **D.3** README 로드맵 `2.6.0 ✅` 표기 + `VERIFY.md`(S1-S3 결과·지연시간) 작성
+- **D.4** dev 커밋 → main 머지 → **tag `v2.6.0`**
 
 ## 범위 제외
 
