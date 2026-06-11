@@ -1,13 +1,14 @@
-"""ver2.0.1 — Central Configuration
+"""Central Configuration
 
-ver1(90_RAG-Pipeline)의 chroma_db를 읽기 전용으로 참조한다.
-ver1 파일은 import하지 않고, 필요한 값만 여기에 복사/명시한다.
+PubMed 코퍼스(5,590편)의 PubMedBERT 임베딩이 적재된 chroma_db를 조회한다.
+DB는 이 프로젝트에 함께 동봉되어 있다(chroma_db/). DB 빌드 파이프라인(수집→전처리→
+스크리닝→임베딩→적재)의 코드는 전신 버전(태그 v1.0.0)에 보존되어 있다.
 """
 from pathlib import Path
 
-# ── ver1 chroma_db (읽기 전용 참조) ──
-VER1_DIR = Path("/Users/inco/01_Projects/dohyun-jose-kim/03_Chatbot-RAG-LLM/90_RAG-Pipeline")
-CHROMA_DIR = str(VER1_DIR / "outputs" / "02_vectordb" / "chroma_db")
+# ── 동봉 chroma_db ──
+PROJECT_DIR = Path(__file__).resolve().parent
+CHROMA_DIR = str(PROJECT_DIR / "chroma_db")
 COLLECTION_NAME = "pubmed_abstracts"
 
 # ── Embedding Model (PubMedBERT) — ver1과 동일해야 벡터공간 일치 ──
@@ -21,7 +22,7 @@ TOP_K = 5
 LLM_MODEL = "gemma4:31b"   # 품질 확인용
 DEV_MODEL = "gemma3:4b"    # 개발/디버깅용 (멀티턴은 턴당 LLM 2회 호출)
 
-# ── Prompts (ver1 config.py에서 차용) ──
+# ── Prompts ──
 SYSTEM_PROMPT = """\
 You are a research assistant specializing in fishery byproduct bioactivity.
 
