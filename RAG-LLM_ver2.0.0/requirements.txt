@@ -6,3 +6,8 @@ chromadb>=1.0
 langchain>=1.0
 langchain-classic>=1.0   # create_history_aware_retriever 등 레거시 체인 (1.x에서 분리됨)
 langchain-ollama>=0.2
+# ver2.2.0 — API + UI
+fastapi>=0.115
+uvicorn>=0.30
+streamlit>=1.40
+requests>=2.31
