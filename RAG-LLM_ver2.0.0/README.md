@@ -140,4 +140,10 @@ S3 (멀티턴):     Q1 후 "What about its antioxidant effects?"  (대명사)
 | 2.4.0 | user config, id/pw | 예정 |
 | 2.5.0 | server deploy | 예정 |
 
+**스핀오프** (메인 라인 밖, 별도 태그 네임스페이스):
+
+| 버전 | 내용 | 상태 |
+|---|---|---|
+| 2.6.0-mcp.1 | MCP 서버화 — 검색 tool 2개를 MCP(stdio)로 노출 (`07_mcp/`) | ✅ 완료 (tag `v2.6.0-mcp.1`) |
+
 품질 평가(RAGAS), 검색 고도화(re-ranking, hybrid, 코사인 전환), 응답 스트리밍은 향후 과제.

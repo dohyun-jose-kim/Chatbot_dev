@@ -14,3 +14,5 @@ requests>=2.31
 # ver2.6.0 — LangGraph 에이전트
 langgraph>=1.0
 langgraph-checkpoint-sqlite>=2.0
+# ver2.6.0-mcp — MCP 서버 (스핀오프; FastMCP 포함 공식 SDK)
+mcp>=1.0
